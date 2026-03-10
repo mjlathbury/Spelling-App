@@ -8,6 +8,7 @@ export type GameMode = 'classic' | 'flash' | 'blanks' | 'sudden-death' | 'proofr
 export interface Word {
   id: string;
   text: string;
+  audio?: string; // Base64 data URL of spoken incantation
 }
 
 export interface SpellingList {

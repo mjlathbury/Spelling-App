@@ -213,15 +213,16 @@ export default function SeersWordsearch() {
           onTouchEnd={handleEnd}
           className="grid grid-cols-10 gap-1 p-2 glass-card border-[var(--theme-color)]/30 touch-none"
         >
-          {grid.map((row, r) => row.map((cell, c) => (
+            {grid.map((row, r) => row.map((cell, c) => (
             <div
               key={`${r}-${c}`}
               data-cell={`${r}-${c}`}
               className={`
                 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-sm font-black transition-all rounded-md
-                ${isCellSelected(r, c) ? 'bg-[var(--theme-color)] text-white scale-110 z-10' : ''}
-                ${isCellFound(r, c) ? 'text-gold drop-shadow-[0_0_5px_rgba(255,215,0,0.8)]' : 'text-white/60'}
+                ${isCellSelected(r, c) ? 'bg-[#9d50bb]/80 text-white scale-110 z-10 shadow-[0_0_15px_#9d50bb]' : ''}
+                ${isCellFound(r, c) ? 'text-gold drop-shadow-[0_0_8px_rgba(255,215,0,0.8)]' : 'text-white/60'}
               `}
+              style={isCellSelected(r, c) ? { background: 'radial-gradient(circle, #9d50bb 0%, transparent 70%)' } : {}}
             >
               {cell.char}
             </div>

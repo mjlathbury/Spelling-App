@@ -4,6 +4,7 @@
  */
 
 import { SpellingList, Voucher, PrizeDefinition } from '../types';
+import { saveAudio, deleteAudio } from './audioDb';
 
 const STORAGE_KEY = 'spelling_lists';
 const VOUCHER_KEY = 'spelling_vouchers';
@@ -35,17 +36,66 @@ export const storageService = {
   saveList: (list: SpellingList) => {
     const lists = storageService.getLists();
     const index = lists.findIndex(l => l.id === list.id);
+
+    // Strip audio from words before localStorage, persist to IDB separately
+    const wordsForIdb = list.words.filter(w => w.audio);
+    const listToStore: SpellingList = {
+      ...list,
+      words: list.words.map(({ audio: _audio, ...rest }) => rest),
+    };
+
     if (index > -1) {
-      lists[index] = list;
+      lists[index] = listToStore;
     } else {
-      lists.push(list);
+      lists.push(listToStore);
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
+
+    // Fire-and-forget: write audio blobs to IDB
+    wordsForIdb.forEach(w => {
+      if (w.audio) saveAudio(w.id, w.audio).catch(() => {});
+    });
   },
 
   deleteList: (id: string) => {
-    const lists = storageService.getLists().filter(l => l.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
+    const lists = storageService.getLists();
+    const toDelete = lists.find(l => l.id === id);
+    if (toDelete) {
+      // Cascade-delete audio from IDB
+      toDelete.words.forEach(w => deleteAudio(w.id).catch(() => {}));
+    }
+    const remaining = lists.filter(l => l.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+  },
+
+  // Convert a File/Blob to a Base64 data URL using FileReader
+  fileToBase64: (file: File | Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+    });
+  },
+
+  // Seeds built-in spellbooks on first launch (only if no lists exist)
+  seedDefaultLists: () => {
+    const existing = storageService.getLists();
+    if (existing.length > 0) return; // Don't overwrite user's lists
+
+    const colourWords = [
+      'red', 'yellow', 'pink', 'green', 'orange',
+      'purple', 'blue', 'black', 'white', 'grey',
+    ];
+
+    const coloursList: SpellingList = {
+      id: 'default-colours',
+      name: 'Colours',
+      words: colourWords.map((text, i) => ({ id: `colour-${i}`, text })),
+      createdAt: Date.now(),
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([coloursList]));
   },
 
   getVouchers: (): Voucher[] => {
@@ -196,15 +246,7 @@ export const storageService = {
     }
   },
 
-  // Base64 Engine
-  fileToBase64: async (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
-  },
+
 
   clearAll: () => {
     localStorage.clear();

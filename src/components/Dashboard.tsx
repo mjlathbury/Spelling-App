@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Play, Wallet, Trash2, Clock, Trophy, Book, Sparkles } from 'lucide-react';
+import { Plus, Play, Wallet, Trash2, Clock, FlaskConical, Book, Sparkles } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { SpellingList, Voucher } from '../types';
 import { motion } from 'motion/react';
@@ -74,26 +74,16 @@ export default function Dashboard() {
             onClick={() => handleNavigation('/rewards')}
             className="glass-card p-5 md:p-8 transition-all text-left group relative overflow-hidden flex flex-col items-start justify-center min-h-[140px] md:min-h-[200px]"
           >
-            <div className="bg-gold/20 text-gold w-10 h-10 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <Trophy size={24} />
+            <div className="bg-emerald-500/20 text-emerald-400 w-10 h-10 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <FlaskConical size={24} />
             </div>
-            <h3 className="text-lg md:text-2xl font-black text-white mb-1">Treasure Chest</h3>
-            <p className="text-[10px] md:text-sm text-[var(--theme-color)] font-medium leading-tight">Behold your earned vouchers and rewards.</p>
+            <h3 className="text-lg md:text-2xl font-black text-white mb-1">Potions</h3>
+            <p className="text-[10px] md:text-sm text-[var(--theme-color)] font-medium leading-tight">Brew your earned vouchers and claim rewards.</p>
             <div className="absolute -right-4 -bottom-4 text-white/5 group-hover:text-white/10 transition-colors">
-              <Trophy size={80} />
+              <FlaskConical size={80} />
             </div>
           </button>
         </div>
-
-        {/* Footer Actions */}
-        <footer className="text-center space-y-4">
-          <button
-            onClick={handleLogout}
-            className="text-[10px] font-black text-white/30 hover:text-rose-400 uppercase tracking-[0.2em] transition-colors flex items-center gap-2 mx-auto"
-          >
-            Assume New Identity
-          </button>
-        </footer>
       </div>
     </div>
   );

@@ -5,8 +5,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Volume2, Trophy, RefreshCw, Home, Sparkles, Check, X, XCircle } from 'lucide-react';
+import { Trophy, RefreshCw, Home, Sparkles, Check, X, XCircle } from 'lucide-react';
 import { storageService } from '../services/storageService';
+import { preloadWordAudio, playWordAudio } from '../services/audioService';
 import { SpellingList, GameMode } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
@@ -72,18 +73,9 @@ export default function Practice() {
   const [nInARowCount, setNInARowCount] = useState(0);
   const [nInARowTarget, setNInARowTarget] = useState(0);
   
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { registerHandler, unregisterHandler, isShift } = useKeyboard();
+  const audioMapRef = useRef<Map<string, HTMLAudioElement>>(new Map());
 
-  useEffect(() => {
-    audioRef.current = new Audio();
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (id) {
@@ -91,6 +83,10 @@ export default function Practice() {
       const found = lists.find(l => l.id === id);
       if (found) {
         setList(found);
+        // Async: fetch audio from IDB for this session's words only
+        preloadWordAudio(found.words).then(map => {
+          audioMapRef.current = map;
+        }).catch(() => {});
       } else {
         navigate('/');
       }
@@ -110,6 +106,11 @@ export default function Practice() {
     if (!list || !mode || isFinished) return;
     
     const currentWord = list.words[currentIndex];
+
+    // Play custom audio incantation for Classic mode
+    if (mode === 'classic') {
+      playWordAudio(audioMapRef.current, currentWord.id);
+    }
     
     if (mode === 'flash') {
       setFlashVisible(true);
@@ -274,7 +275,7 @@ export default function Practice() {
         setUserInput(prev => prev.slice(0, -1));
       }
     } else if (key.length === 1) {
-      const char = isShift ? key.toUpperCase() : key.toLowerCase();
+      const char = key; // keyboard already emits the correct case
       if (mode === 'blanks') {
         const nextBlankIdx = blanksInput.findIndex((val, i) => blanksData[i].isBlank && val === '');
         if (nextBlankIdx !== -1) {
@@ -292,7 +293,7 @@ export default function Practice() {
         setUserInput(prev => prev + char);
       }
     }
-  }, [handleSubmit, mode, blanksInput, blanksData, isShift]);
+  }, [handleSubmit, mode, blanksInput, blanksData]);
 
   useEffect(() => {
     if (isFinished || feedback) {
@@ -439,7 +440,7 @@ export default function Practice() {
 
             <div className="text-center mb-6">
               <div className="w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mx-auto transition-all shadow-lg mb-4 bg-white/5 text-white/10">
-                <Volume2 size={24} />
+                <Sparkles size={24} />
               </div>
               
               {mode === 'flash' && flashVisible && (

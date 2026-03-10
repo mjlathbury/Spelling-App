@@ -9,13 +9,13 @@ export const THEMES = [
   { color: '#9d50bb', name: 'Lilac' },
   { color: '#ffd700', name: 'Gold' },
   { color: '#10b981', name: 'Emerald' },
-  { color: '#f43f5e', name: 'Rose' },
   { color: '#3b82f6', name: 'Blue' },
   { color: '#f59e0b', name: 'Amber' },
-  { color: '#8b5cf6', name: 'Violet' },
+  { color: '#ef4444', name: 'Crimson' },
   { color: '#ec4899', name: 'Pink' },
-  { color: '#14b8a6', name: 'Teal' },
-  { color: '#ffffff', name: 'White' }
+  { color: '#8b5cf6', name: 'Violet' },
+  { color: '#06b6d4', name: 'Cyan' },
+  { color: '#f97316', name: 'Orange' }
 ];
 
 interface ThemeContextType {

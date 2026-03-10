@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { storageService } from '../services/storageService';
+import { playWitchChime } from '../services/audioService';
 import { useKeyboard } from '../context/KeyboardContext';
 import { SpellingList } from '../types';
 
@@ -50,15 +51,18 @@ export default function WitchsNoose() {
   }, [listId, navigate, isTrial, clearKeyStates]);
 
   const onKeyPress = useCallback((key: string) => {
-    if (gameOver || guessedLetters.includes(key) || !/^[A-Z]$/.test(key)) return;
+    // Normalise to uppercase for matching (keyboard may emit lowercase)
+    const upperKey = key.toUpperCase();
+    if (gameOver || guessedLetters.includes(upperKey) || !/^[A-Z]$/.test(upperKey)) return;
 
-    const newGuessed = [...guessedLetters, key];
+    const newGuessed = [...guessedLetters, upperKey];
     setGuessedLetters(newGuessed);
 
-    if (!targetWord.includes(key)) {
+    if (!targetWord.includes(upperKey)) {
       const newMistakes = mistakes + 1;
       setMistakes(newMistakes);
-      setKeyState(key, 'disabled');
+      setKeyState(upperKey, 'disabled');
+      playWitchChime(newMistakes); // dark descending chime per body part added
 
       if (newMistakes >= MAX_MISTAKES) {
         setGameOver(true);
@@ -71,7 +75,7 @@ export default function WitchsNoose() {
         }
       }
     } else {
-      setKeyState(key, 'correct');
+      setKeyState(upperKey, 'correct');
       // Check win
       const isWon = targetWord.split('').every(char => newGuessed.includes(char));
       if (isWon) {
@@ -91,23 +95,24 @@ export default function WitchsNoose() {
   }, [registerHandler, unregisterHandler, onKeyPress]);
 
   const renderWitchPart = (part: number) => {
-    const opacity = mistakes >= part ? 1 : 0.1;
-    const stroke = mistakes >= part ? 'var(--theme-color)' : 'rgba(255,255,255,0.1)';
+    const isActive = mistakes >= part;
+    const color = isActive ? 'var(--theme-color)' : 'rgba(255,255,255,0.05)';
+    const glow = isActive ? 'drop-shadow(0 0 5px var(--theme-glow))' : 'none';
     
     switch (part) {
-      case 1: return <line x1="20" y1="230" x2="180" y2="230" stroke={stroke} strokeWidth="4" />; // Base
-      case 2: return <line x1="50" y1="230" x2="50" y2="20" stroke={stroke} strokeWidth="4" />; // Main strut
-      case 3: return <line x1="50" y1="190" x2="80" y2="230" stroke={stroke} strokeWidth="4" />; // Left support
-      case 4: return <line x1="50" y1="190" x2="20" y2="230" stroke={stroke} strokeWidth="4" />; // Right support
-      case 5: return <line x1="50" y1="20" x2="150" y2="20" stroke={stroke} strokeWidth="4" />; // Crossbeam
-      case 6: return <line x1="50" y1="60" x2="90" y2="20" stroke={stroke} strokeWidth="4" />; // Crossbeam support
-      case 7: return <line x1="150" y1="20" x2="150" y2="50" stroke={stroke} strokeWidth="2" strokeDasharray="4 2" />; // Rope
-      case 8: return <circle cx="150" cy="70" r="20" fill="none" stroke={stroke} strokeWidth="3" />; // Head
-      case 9: return <line x1="150" y1="90" x2="150" y2="150" stroke={stroke} strokeWidth="3" />; // Body
-      case 10: return <line x1="150" y1="110" x2="120" y2="140" stroke={stroke} strokeWidth="3" />; // Left arm
-      case 11: return <line x1="150" y1="110" x2="180" y2="140" stroke={stroke} strokeWidth="3" />; // Right arm
-      case 12: return <line x1="150" y1="150" x2="120" y2="200" stroke={stroke} strokeWidth="3" />; // Left leg
-      case 13: return <line x1="150" y1="150" x2="180" y2="200" stroke={stroke} strokeWidth="3" />; // Right leg
+      case 1: return <line x1="20" y1="230" x2="180" y2="230" stroke={color} strokeWidth="6" strokeLinecap="round" style={{ filter: glow }} />; // Base
+      case 2: return <line x1="50" y1="230" x2="50" y2="20" stroke={color} strokeWidth="6" strokeLinecap="round" style={{ filter: glow }} />; // upright
+      case 3: return <line x1="50" y1="20" x2="150" y2="20" stroke={color} strokeWidth="6" strokeLinecap="round" style={{ filter: glow }} />; // top beam
+      case 4: return <line x1="50" y1="60" x2="90" y2="20" stroke={color} strokeWidth="4" strokeLinecap="round" style={{ filter: glow }} />; // support
+      case 5: return <line x1="150" y1="20" x2="150" y2="50" stroke={color} strokeWidth="2" strokeDasharray="4 2" style={{ filter: glow }} />; // rope
+      case 6: return <circle cx="150" cy="70" r="20" fill="none" stroke={color} strokeWidth="3" style={{ filter: glow }} />; // head
+      case 7: return <line x1="150" y1="90" x2="150" y2="150" stroke={color} strokeWidth="3" strokeLinecap="round" style={{ filter: glow }} />; // body
+      case 8: return <line x1="150" y1="110" x2="120" y2="140" stroke={color} strokeWidth="3" strokeLinecap="round" style={{ filter: glow }} />; // L arm
+      case 9: return <line x1="150" y1="110" x2="180" y2="140" stroke={color} strokeWidth="3" strokeLinecap="round" style={{ filter: glow }} />; // R arm
+      case 10: return <line x1="150" y1="150" x2="130" y2="200" stroke={color} strokeWidth="3" strokeLinecap="round" style={{ filter: glow }} />; // L leg
+      case 11: return <line x1="150" y1="150" x2="170" y2="200" stroke={color} strokeWidth="3" strokeLinecap="round" style={{ filter: glow }} />; // R leg
+      case 12: return <circle cx="143" cy="65" r="2" fill={color} style={{ filter: glow }} />; // L eye
+      case 13: return <circle cx="157" cy="65" r="2" fill={color} style={{ filter: glow }} />; // R eye
       default: return null;
     }
   };

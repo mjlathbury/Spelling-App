@@ -16,8 +16,8 @@ interface SplashScreenProps {
 export default function SplashScreen({ children }: SplashScreenProps) {
   const [show, setShow] = useState<boolean | null>(null);
   const [name, setName] = useState('');
-  const { registerHandler, unregisterHandler } = useKeyboard();
-
+  const { registerHandler, unregisterHandler, setShowKeyboard } = useKeyboard();
+ 
   useEffect(() => {
     const savedName = storageService.getUserName();
     if (savedName && savedName.trim() !== '') {
@@ -27,14 +27,39 @@ export default function SplashScreen({ children }: SplashScreenProps) {
     }
   }, []);
 
+  // Play magic intro audio
+  useEffect(() => {
+    if (show) {
+      const audio = new Audio('/Magicintro.mp3');
+      audio.volume = 0.6;
+      audio.loop = true;
+      
+      audio.play().catch(() => {
+        // If autoplay is blocked by the browser, play on first interaction
+        const playOnInteract = () => {
+          audio.play().catch(() => {});
+          document.removeEventListener('keydown', playOnInteract);
+          document.removeEventListener('click', playOnInteract);
+        };
+        document.addEventListener('keydown', playOnInteract, { once: true });
+        document.addEventListener('click', playOnInteract, { once: true });
+      });
+    }
+  }, [show]);
+
+ 
   const handleStart = useCallback(() => {
     const trimmedName = name.trim();
     if (trimmedName) {
+      if (navigator.vibrate) {
+        navigator.vibrate(50); // Haptic wake-up pulse
+      }
       storageService.setUserName(trimmedName);
+      setShowKeyboard(false); // Hide keyboard immediately on identification
       setShow(false);
     }
-  }, [name]);
-
+  }, [name, setShowKeyboard]);
+ 
   const onKeyPress = useCallback((key: string) => {
     if (key === 'ENTER') {
       handleStart();
@@ -46,15 +71,20 @@ export default function SplashScreen({ children }: SplashScreenProps) {
       setName(prev => prev + key);
     }
   }, [handleStart]);
-
+ 
   useEffect(() => {
     if (show) {
+      setShowKeyboard(true); // Ensure keyboard is up for identification
       registerHandler(onKeyPress);
     } else {
+      setShowKeyboard(false);
       unregisterHandler();
     }
-    return () => unregisterHandler();
-  }, [show, registerHandler, unregisterHandler, onKeyPress]);
+    return () => {
+      setShowKeyboard(false);
+      unregisterHandler();
+    };
+  }, [show, registerHandler, unregisterHandler, onKeyPress, setShowKeyboard]);
 
   if (show === null) return null;
 

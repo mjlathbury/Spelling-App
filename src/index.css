@@ -13,6 +13,16 @@
   --gold: #ffd700;
   --glass: rgba(255, 255, 255, 0.1);
   --glass-border: rgba(255, 255, 255, 0.2);
+
+  /* Layout height system */
+  --stage-height: 100vh;
+  --keyboard-height: 0vh;
+}
+
+/* Keyboard-active overrides: stage shrinks, keyboard slides in */
+.keyboard-active {
+  --stage-height: 70vh;
+  --keyboard-height: 30vh;
 }
 
 html, body, #root {
@@ -20,77 +30,33 @@ html, body, #root {
   width: 100vw;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow: hidden !important;
   background-color: #020208;
   color: white;
   font-family: var(--font-sans);
   user-select: none;
   -webkit-user-select: none;
+  touch-action: none;
 }
 
 /* Layout Enforcement */
 #main-stage {
-  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  height: var(--stage-height, 100vh);
+  transition: height 0.3s ease-in-out;
+  will-change: height;
 }
 
 #custom-keyboard {
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-}
-
-.keyboard-active #main-stage {
-  height: 70vh;
-}
-
-.keyboard-active #custom-keyboard {
-  height: 30vh;
-  display: flex;
-  flex-direction: column;
-  transform: translateY(0);
-  opacity: 1;
-}
-
-.keyboard-hidden #main-stage {
-  height: 100vh;
-}
-
-.keyboard-hidden #custom-keyboard {
-  height: 0;
-  display: none;
-  transform: translateY(100%);
-  opacity: 0;
-}
-
-/* Magical Background */
-body {
-  background: #020208;
-  position: relative;
-}
-
-.scrollable-content {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 2rem;
-}
-
-.scrollable-content::-webkit-scrollbar {
-  width: 4px;
-}
-
-.scrollable-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.scrollable-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  height: var(--keyboard-height, 0vh);
+  transition: height 0.3s ease-in-out, opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  will-change: height, transform, opacity;
 }
 
 /* Glassmorphism */
 .glass-card {
   background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 1.5rem;
 }
@@ -129,13 +95,24 @@ h1, h2, h3 {
   letter-spacing: -0.01em;
 }
 
-.text-glow {
-  text-shadow: 0 0 10px var(--theme-glow);
+/* Atmospheric Effects */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
 }
 
-.text-gold {
-  color: #ffd700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+@keyframes nebula-pulse {
+  0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.4; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s infinite linear;
 }
 
 /* Responsive sizes */

@@ -14,6 +14,8 @@ interface KeyboardContextType {
   keyStates: Record<string, 'disabled' | 'correct' | 'misplaced' | 'default'>;
   setKeyState: (key: string, state: 'disabled' | 'correct' | 'misplaced' | 'default') => void;
   clearKeyStates: () => void;
+  showKeyboard: boolean;
+  setShowKeyboard: (val: boolean) => void;
 }
 
 const KeyboardContext = createContext<KeyboardContextType | undefined>(undefined);
@@ -22,6 +24,7 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
   const [handler, setHandler] = useState<((key: string) => void) | null>(null);
   const [isShift, setIsShift] = useState(false);
   const [keyStates, setKeyStates] = useState<Record<string, 'disabled' | 'correct' | 'misplaced' | 'default'>>({});
+  const [showKeyboard, setShowKeyboard] = useState(false);
 
   const registerHandler = useCallback((newHandler: (key: string) => void) => {
     setHandler(() => newHandler);
@@ -53,8 +56,10 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
     setIsShift,
     keyStates,
     setKeyState,
-    clearKeyStates
-  }), [onKeyPress, registerHandler, unregisterHandler, isShift, keyStates, setKeyState, clearKeyStates]);
+    clearKeyStates,
+    showKeyboard,
+    setShowKeyboard
+  }), [onKeyPress, registerHandler, unregisterHandler, isShift, keyStates, setKeyState, clearKeyStates, showKeyboard]);
 
   return (
     <KeyboardContext.Provider value={value}>

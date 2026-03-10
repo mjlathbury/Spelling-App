@@ -40,8 +40,10 @@ export default function Rewards() {
   const handleRedeem = (id: string) => {
     setRedeemingId(id);
     
-    // Fire Whoosh / Sparkle sound
-    navigator.vibrate([20, 100, 20, 100]);
+    // Haptic feedback for redemption
+    if (navigator.vibrate) {
+      navigator.vibrate([20, 100, 20, 100]);
+    }
 
     setTimeout(() => {
       storageService.deleteVoucher(id);

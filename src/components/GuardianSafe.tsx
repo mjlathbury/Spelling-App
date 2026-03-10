@@ -11,13 +11,16 @@ import { PrizeDefinition } from '../types';
 interface GuardianSafeProps {
   isOpen: boolean;
   onClose: () => void;
+  onReset?: () => void; // called after emergency reset so parent can force re-render
 }
 
-export default function GuardianSafe({ isOpen, onClose }: GuardianSafeProps) {
+export default function GuardianSafe({ isOpen, onClose, onReset }: GuardianSafeProps) {
   const [step, setStep] = useState<'pin' | 'setup' | 'menu' | 'factory'>('pin');
   const [pinInput, setPinInput] = useState('');
   const [savedPin, setSavedPin] = useState<string | null>(null);
   const [error, setError] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetDone, setResetDone] = useState(false);
   
   // Prize Factory State
   const [prizes, setPrizes] = useState<PrizeDefinition[]>([]);
@@ -77,10 +80,20 @@ export default function GuardianSafe({ isOpen, onClose }: GuardianSafeProps) {
   };
 
   const handleReset = () => {
-    if (window.confirm('Are you sure you want to clear all daily/weekly locks?')) {
-      storageService.emergencyReset();
-      alert('All locks have been cleared!');
-    }
+    setConfirmReset(true);
+  };
+
+  const handleConfirmedReset = () => {
+    storageService.emergencyReset();
+    setConfirmReset(false);
+    setResetDone(true);
+    setTimeout(() => {
+      setResetDone(false);
+      // Use onReset if provided (tells parent to force-remount children)
+      // otherwise fall back to onClose
+      if (onReset) onReset();
+      else onClose();
+    }, 1200);
   };
 
   const savePrize = () => {
@@ -209,6 +222,45 @@ export default function GuardianSafe({ isOpen, onClose }: GuardianSafeProps) {
                     <div className="text-rose-400/50 text-xs font-bold uppercase tracking-wider">Clear All Daily/Weekly Locks</div>
                   </div>
                 </button>
+
+                {/* Inline confirmation / success */}
+                <AnimatePresence>
+                  {confirmReset && !resetDone && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="glass-card p-5 border-rose-500/40 bg-rose-500/10 space-y-4"
+                    >
+                      <p className="text-white font-bold text-sm text-center">
+                        This will unlock all locked games for all lists. Are you sure?
+                      </p>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setConfirmReset(false)}
+                          className="flex-1 py-3 rounded-xl bg-white/10 text-white font-black text-sm uppercase tracking-wider"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleConfirmedReset}
+                          className="flex-1 py-3 rounded-xl bg-rose-500 text-white font-black text-sm uppercase tracking-wider shadow-[0_0_15px_rgba(239,68,68,0.4)]"
+                        >
+                          Yes, Reset
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                  {resetDone && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="glass-card p-4 border-emerald-500/40 bg-emerald-500/10 text-center"
+                    >
+                      <span className="text-emerald-400 font-black text-sm uppercase tracking-widest">✓ All Locks Cleared!</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
