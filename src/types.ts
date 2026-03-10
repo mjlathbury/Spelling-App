@@ -1,0 +1,36 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+export type GameMode = 'classic' | 'flash' | 'blanks' | 'sudden-death' | 'proofread' | 'n-in-a-row' | 'masters-grid' | 'witchs-noose' | 'seers-wordsearch' | 'lexicon-leak';
+
+export interface Word {
+  id: string;
+  text: string;
+}
+
+export interface SpellingList {
+  id: string;
+  name: string;
+  words: Word[];
+  createdAt: number;
+}
+
+export interface Voucher {
+  id: string;
+  name: string;
+  minutes: number;
+  earnedAt: number;
+  listName: string;
+}
+
+export interface PrizeDefinition {
+  id: string;
+  name: string;
+  minutes: number;
+  tierColor: 'lilac' | 'gold' | 'cosmic';
+  weeklyLimit: boolean;
+  mergeable: boolean;
+  wonThisWeek?: boolean;
+}
