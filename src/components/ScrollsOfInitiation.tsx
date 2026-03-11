@@ -40,15 +40,10 @@ const GAME_LORE: Record<GameMode, LoreInfo> = {
     story: 'Deceptive shadows have twisted the scrolls. Discern the true from the false.',
     rules: 'Decide if the displayed word is spelled correctly or incorrectly.'
   },
-  'n-in-a-row': {
-    name: 'Rhythmic Chant',
-    story: 'Power is built through repetition. Recite the spell perfectly to anchor its strength.',
-    rules: 'Spell each word multiple times in a row to master it.'
-  },
   'masters-grid': {
-    name: "Master's Grid",
-    story: 'The Alchemist\'s Secret. A hidden formula lies within the grid. Narrow down the possibilities to reveal the gold.',
-    rules: 'Guess the word in 6-8 tries. Colors hint at correct letters and positions.'
+    name: "Wizard's Grid",
+    story: "The Archmage has hidden a secret rune. You have 6 attempts to decipher it.",
+    rules: 'Guess the 5-letter word. Only real words from the ancient lexicon are accepted.'
   },
   'witchs-noose': {
     name: "The Witch's Noose",

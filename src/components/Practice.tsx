@@ -70,9 +70,7 @@ export default function Practice() {
   const [blanksData, setBlanksData] = useState<{ char: string, isBlank: boolean }[]>([]);
   const [blanksInput, setBlanksInput] = useState<string[]>([]);
   const [proofreadWord, setProofreadWord] = useState<{ text: string, isCorrect: boolean } | null>(null);
-  const [nInARowCount, setNInARowCount] = useState(0);
-  const [nInARowTarget, setNInARowTarget] = useState(0);
-  
+
   const { registerHandler, unregisterHandler, isShift } = useKeyboard();
   const audioMapRef = useRef<Map<string, HTMLAudioElement>>(new Map());
 
@@ -141,11 +139,6 @@ export default function Practice() {
         isCorrect
       });
     }
-
-    if (mode === 'n-in-a-row' && nInARowTarget === 0) {
-      setNInARowTarget(Math.floor(Math.random() * 3) + 1);
-      setNInARowCount(0);
-    }
   }, [currentIndex, mode, list, isFinished]);
 
   const triggerSuccess = () => {
@@ -197,7 +190,6 @@ export default function Practice() {
       setCurrentIndex(currentIndex + 1);
       setUserInput('');
       setFeedback(null);
-      setNInARowTarget(0);
     } else {
       setIsFinished(true);
       awardVoucher();
@@ -217,25 +209,9 @@ export default function Practice() {
     }
 
     if (isCorrect) {
-      if (mode === 'n-in-a-row') {
-        const nextCount = nInARowCount + 1;
-        setNInARowCount(nextCount);
-        if (nextCount >= nInARowTarget) {
-          triggerSuccess();
-          setScore(s => s + 1);
-          setTimeout(handleNext, 1500);
-        } else {
-          setFeedback('correct');
-          setTimeout(() => {
-            setFeedback(null);
-            setUserInput('');
-          }, 500);
-        }
-      } else {
-        triggerSuccess();
-        setScore(s => s + 1);
-        setTimeout(handleNext, 1500);
-      }
+      triggerSuccess();
+      setScore(s => s + 1);
+      setTimeout(handleNext, 1500);
     } else {
       triggerFailure();
       if (mode === 'sudden-death') {
@@ -250,11 +226,10 @@ export default function Practice() {
         setTimeout(() => {
           setFeedback(null);
           if (mode !== 'blanks') setUserInput('');
-          if (mode === 'n-in-a-row') setNInARowCount(0);
         }, 1500);
       }
     }
-  }, [list, feedback, currentIndex, mode, blanksInput, userInput, nInARowCount, nInARowTarget]);
+  }, [list, feedback, currentIndex, mode, blanksInput, userInput]);
 
   const onKeyPress = useCallback((key: string) => {
     if (key === 'ENTER') {
@@ -480,17 +455,6 @@ export default function Practice() {
               {mode === 'proofread' && proofreadWord && (
                 <div className="text-3xl md:text-5xl font-black text-white tracking-widest text-glow">
                   {proofreadWord.text}
-                </div>
-              )}
-
-              {mode === 'n-in-a-row' && (
-                <div className="flex justify-center gap-2 mt-2">
-                  {Array.from({ length: nInARowTarget }).map((_, i) => (
-                    <div 
-                      key={i}
-                      className={`w-2.5 h-2.5 rounded-full border ${i < nInARowCount ? 'bg-[var(--theme-color)] border-[var(--theme-color)] shadow-[0_0_8px_var(--theme-glow)]' : 'bg-white/5 border-white/10'}`}
-                    />
-                  ))}
                 </div>
               )}
             </div>

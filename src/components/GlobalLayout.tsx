@@ -20,16 +20,17 @@ export default function GlobalLayout({ children }: GlobalLayoutProps) {
   const isKeyboardActive = useMemo(() => {
     const path = location.pathname;
 
-    // showKeyboard (splash/login) ALWAYS wins — must be checked before route suppression
+    // showKeyboard (splash/login) ALWAYS wins
     if (showKeyboard) return true;
 
-    // Routes where the keyboard is NEVER shown — stage should be 100vh
-    const noKeyboardRoutes = ['/', '/portal', '/rewards'];
-    if (noKeyboardRoutes.includes(path)) return false;
+    // Routes where the keyboard is NEVER shown — full 100vh stage
+    const noKeyboardRoutes = ['/', '/portal', '/rewards', '/spellbooks', '/settings'];
+    if (noKeyboardRoutes.some(r => path === r)) return false;
     if (path.startsWith('/lexicon-leak')) return false;
+    if (path.startsWith('/seers-wordsearch')) return false;
 
-    // Routes where the keyboard IS shown — stage is 70vh
-    return path.startsWith('/builder') || path.startsWith('/witchs-noose');
+    // All other routes (games, builder, etc.) get the keyboard
+    return true;
   }, [location.pathname, showKeyboard]);
 
   return (

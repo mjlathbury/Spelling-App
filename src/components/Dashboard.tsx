@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Play, Wallet, Trash2, Clock, FlaskConical, Book, Sparkles } from 'lucide-react';
 import { storageService } from '../services/storageService';
@@ -13,13 +13,77 @@ import { motion } from 'motion/react';
 export default function Dashboard() {
   const navigate = useNavigate();
   const [userName, setUserName] = useState<string>('');
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     setUserName(storageService.getUserName() || 'Hero');
   }, []);
 
+  // Play Epic.mp3 background music on the main screen
+  useEffect(() => {
+    let fadeInInterval: ReturnType<typeof setInterval>;
+    // Delay start to allow splash screen music to finish fading out
+    const startDelay = setTimeout(() => {
+      const audio = new Audio('/Epic.mp3');
+      audio.volume = 0;
+      audio.loop = true;
+      audioRef.current = audio;
+
+      const play = () => {
+        audio.play().then(() => {
+          // Fade in volume over ~2 seconds
+          let vol = 0;
+          fadeInInterval = setInterval(() => {
+            vol = Math.min(vol + 0.04, 0.4);
+            audio.volume = vol;
+            if (vol >= 0.4) clearInterval(fadeInInterval);
+          }, 100);
+        }).catch(() => {});
+      };
+
+      play();
+
+      // Fallback: play on first user interaction if autoplay is blocked
+      const onInteract = () => play();
+      document.addEventListener('click', onInteract, { once: true });
+      document.addEventListener('keydown', onInteract, { once: true });
+
+      return () => {
+        document.removeEventListener('click', onInteract);
+        document.removeEventListener('keydown', onInteract);
+      };
+    }, 800);
+
+    return () => {
+      clearTimeout(startDelay);
+      clearInterval(fadeInInterval);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  // Fade out music then navigate
   const handleNavigation = (path: string) => {
-    navigate(path);
+    const audio = audioRef.current;
+    if (audio && !audio.paused) {
+      const fadeOut = setInterval(() => {
+        if (audio.volume > 0.05) {
+          audio.volume = Math.max(0, audio.volume - 0.05);
+        } else {
+          audio.volume = 0;
+          audio.pause();
+          audio.src = '';
+          audioRef.current = null;
+          clearInterval(fadeOut);
+          navigate(path);
+        }
+      }, 60);
+    } else {
+      navigate(path);
+    }
   };
 
   const handleLogout = () => {

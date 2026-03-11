@@ -6,7 +6,7 @@ import Practice from './components/Practice';
 import Rewards from './components/Rewards';
 import Spellbooks from './components/Spellbooks';
 import MagicPortal from './components/MagicPortal';
-import MastersGrid from './components/MastersGrid';
+import WizardsGrid from './components/WizardsGrid';
 import WitchsNoose from './components/WitchsNoose';
 import SeersWordsearch from './components/SeersWordsearch';
 import LexiconLeak from './components/LexiconLeak';
@@ -29,7 +29,7 @@ export default function App() {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/spellbooks" element={<Spellbooks />} />
                   <Route path="/portal" element={<MagicPortal />} />
-                  <Route path="/masters-grid/:listId" element={<MastersGrid />} />
+                  <Route path="/masters-grid/:listId" element={<WizardsGrid />} />
                   <Route path="/witchs-noose/:listId" element={<WitchsNoose />} />
                   <Route path="/seers-wordsearch/:listId" element={<SeersWordsearch />} />
                   <Route path="/lexicon-leak/:listId" element={<LexiconLeak />} />

@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Sparkles, Type, Eye, Zap, ShieldAlert, CheckCircle2, Repeat, BookOpen, Grid3X3, Ghost, Search, FlaskConical, Plus } from 'lucide-react';
+import { Sparkles, Type, Eye, Zap, ShieldAlert, CheckCircle2, BookOpen, Grid3X3, Ghost, Search, FlaskConical, Plus } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { SpellingList, GameMode } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -74,8 +74,7 @@ export default function MagicPortal() {
     { id: 'blanks', name: 'Blanks', icon: <Zap size={24} />, desc: 'Complete the word.' },
     { id: 'sudden-death', name: 'Sudden Death', icon: <ShieldAlert size={24} />, desc: 'One mistake = Over!' },
     { id: 'proofread', name: 'Proofreader', icon: <CheckCircle2 size={24} />, desc: 'Is it correct?' },
-    { id: 'n-in-a-row', name: 'N-in-a-Row', icon: <Repeat size={24} />, desc: 'Spell multiple times.' },
-    { id: 'masters-grid', name: "Master's Grid", icon: <Grid3X3 size={24} />, desc: 'Wordle-style challenge.' },
+    { id: 'masters-grid', name: "Wizard's Grid", icon: <Grid3X3 size={24} />, desc: 'Decipher the hidden rune.' },
     { id: 'witchs-noose', name: "Witch's Noose", icon: <Ghost size={24} />, desc: '13 chimes of fate.' },
     { id: 'seers-wordsearch', name: "Seer's Wordsearch", icon: <Search size={24} />, desc: 'Reveal hidden runes.' },
     { id: 'lexicon-leak', name: 'Lexicon Leak', icon: <FlaskConical size={24} />, desc: 'Translate floating words.' },
@@ -131,7 +130,7 @@ export default function MagicPortal() {
 
           {/* Spellbook Selection - Large & Centered */}
           <section className="max-w-2xl mx-auto">
-            <div className="glass-card p-8 border-[var(--theme-color)]/30 shadow-[0_0_40px_var(--theme-glow)] relative group">
+            <div className="glass-card p-4 border-[var(--theme-color)]/30 shadow-[0_0_40px_var(--theme-glow)] relative group">
               <label className="block text-xs font-black text-[var(--theme-color)] uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
                 <BookOpen size={16} />
                 Active Spellbook
@@ -141,14 +140,14 @@ export default function MagicPortal() {
                   value={selectedListId}
                   onChange={(e) => setSelectedListId(e.target.value)}
                   disabled={isEclipse}
-                  className="w-full p-6 rounded-3xl bg-black/60 border border-white/10 text-white font-black text-2xl outline-none focus:border-[var(--theme-color)] transition-all appearance-none cursor-pointer disabled:opacity-50 shadow-inner"
+                  className="w-full p-3 rounded-2xl bg-black/60 border border-white/10 text-white font-black text-base outline-none focus:border-[var(--theme-color)] transition-all appearance-none cursor-pointer disabled:opacity-50 shadow-inner"
                 >
                   {lists.length === 0 ? (
                     <option value="">No Spellbooks Found</option>
                   ) : (
                     lists.map((list) => (
                       <option key={list.id} value={list.id}>
-                        {list.name} ({list.words.length} spells)
+                        {list.name}
                       </option>
                     ))
                   )}

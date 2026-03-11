@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Wand2 } from 'lucide-react';
 import { storageService } from '../services/storageService';
@@ -15,6 +15,7 @@ interface SplashScreenProps {
 
 export default function SplashScreen({ children }: SplashScreenProps) {
   const [show, setShow] = useState<boolean | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [name, setName] = useState('');
   const { registerHandler, unregisterHandler, setShowKeyboard } = useKeyboard();
  
@@ -27,23 +28,43 @@ export default function SplashScreen({ children }: SplashScreenProps) {
     }
   }, []);
 
-  // Play magic intro audio
+  // Helper: fade out and stop an audio element
+  const fadeOutAudio = useCallback((audio: HTMLAudioElement, onDone?: () => void) => {
+    const fadeOut = setInterval(() => {
+      if (audio.volume > 0.05) {
+        audio.volume = Math.max(0, audio.volume - 0.05);
+      } else {
+        audio.volume = 0;
+        audio.pause();
+        audio.src = '';
+        clearInterval(fadeOut);
+        onDone?.();
+      }
+    }, 80);
+  }, []);
+
+  // Play magic intro audio on splash screen
   useEffect(() => {
     if (show) {
       const audio = new Audio('/Magicintro.mp3');
       audio.volume = 0.6;
       audio.loop = true;
-      
-      audio.play().catch(() => {
-        // If autoplay is blocked by the browser, play on first interaction
-        const playOnInteract = () => {
-          audio.play().catch(() => {});
-          document.removeEventListener('keydown', playOnInteract);
-          document.removeEventListener('click', playOnInteract);
-        };
-        document.addEventListener('keydown', playOnInteract, { once: true });
-        document.addEventListener('click', playOnInteract, { once: true });
-      });
+      audioRef.current = audio;
+
+      const play = () => audio.play().catch(() => {});
+      play();
+
+      // Fallback: play on first interaction if autoplay is blocked
+      const playOnInteract = () => play();
+      document.addEventListener('keydown', playOnInteract, { once: true });
+      document.addEventListener('click', playOnInteract, { once: true });
+
+      return () => {
+        document.removeEventListener('keydown', playOnInteract);
+        document.removeEventListener('click', playOnInteract);
+        audio.pause();
+        audio.src = '';
+      };
     }
   }, [show]);
 
@@ -55,10 +76,15 @@ export default function SplashScreen({ children }: SplashScreenProps) {
         navigator.vibrate(50); // Haptic wake-up pulse
       }
       storageService.setUserName(trimmedName);
-      setShowKeyboard(false); // Hide keyboard immediately on identification
-      setShow(false);
+      setShowKeyboard(false);
+      // Fade out splash music before transitioning
+      if (audioRef.current) {
+        fadeOutAudio(audioRef.current, () => setShow(false));
+      } else {
+        setShow(false);
+      }
     }
-  }, [name, setShowKeyboard]);
+  }, [name, setShowKeyboard, fadeOutAudio]);
  
   const onKeyPress = useCallback((key: string) => {
     if (key === 'ENTER') {

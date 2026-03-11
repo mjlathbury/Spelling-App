@@ -252,3 +252,24 @@ export const storageService = {
     localStorage.clear();
   }
 };
+
+// Module-level cache so we only fetch once per session
+let _wordListCache: Set<string> | null = null;
+let _wordListPromise: Promise<Set<string>> | null = null;
+
+export const loadWordList = (): Promise<Set<string>> => {
+  if (_wordListCache) return Promise.resolve(_wordListCache);
+  if (_wordListPromise) return _wordListPromise;
+
+  _wordListPromise = fetch('/words_alpha.txt')
+    .then(res => res.text())
+    .then(text => {
+      const set = new Set(
+        text.split(/\r?\n/).map(w => w.trim().toLowerCase()).filter(Boolean)
+      );
+      _wordListCache = set;
+      return set;
+    });
+
+  return _wordListPromise;
+};

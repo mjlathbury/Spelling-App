@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type GameMode = 'classic' | 'flash' | 'blanks' | 'sudden-death' | 'proofread' | 'n-in-a-row' | 'masters-grid' | 'witchs-noose' | 'seers-wordsearch' | 'lexicon-leak';
+export type GameMode = 'classic' | 'flash' | 'blanks' | 'sudden-death' | 'proofread' | 'masters-grid' | 'witchs-noose' | 'seers-wordsearch' | 'lexicon-leak';
 
 export interface Word {
   id: string;
