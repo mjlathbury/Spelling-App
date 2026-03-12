@@ -88,7 +88,7 @@ export default function LexiconLeak() {
       setShuffledWords(words);
       setupWord(words[0]);
     } else {
-      navigate('/portal');
+      navigate('/training');
     }
   }, [listId, navigate]);
 
@@ -438,10 +438,10 @@ export default function LexiconLeak() {
                 </p>
               </div>
               <button
-                onClick={() => navigate('/portal')}
+                onClick={() => navigate('/training')}
                 className="w-full py-6 bg-[var(--theme-color)] text-white font-black rounded-[2rem] uppercase tracking-[0.3em] shadow-[0_0_40px_var(--theme-glow)] active:scale-95 transition-all"
               >
-                Return to Portal
+                Return to Training
               </button>
             </div>
           </motion.div>

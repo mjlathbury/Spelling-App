@@ -5,15 +5,16 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Play, Wallet, Trash2, Clock, FlaskConical, Book, Sparkles } from 'lucide-react';
+import { Plus, Play, Wallet, Trash2, Clock, FlaskConical, Book, Sparkles, Trophy, GraduationCap } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { SpellingList, Voucher } from '../types';
 import { motion } from 'motion/react';
+import { useAudio } from '../context/AudioContext';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [userName, setUserName] = useState<string>('');
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { fadeInMusic, fadeOutMusic } = useAudio();
 
   useEffect(() => {
     setUserName(storageService.getUserName() || 'Hero');
@@ -21,69 +22,17 @@ export default function Dashboard() {
 
   // Play Epic.mp3 background music on the main screen
   useEffect(() => {
-    let fadeInInterval: ReturnType<typeof setInterval>;
-    // Delay start to allow splash screen music to finish fading out
-    const startDelay = setTimeout(() => {
-      const audio = new Audio('/Epic.mp3');
-      audio.volume = 0;
-      audio.loop = true;
-      audioRef.current = audio;
-
-      const play = () => {
-        audio.play().then(() => {
-          // Fade in volume over ~2 seconds
-          let vol = 0;
-          fadeInInterval = setInterval(() => {
-            vol = Math.min(vol + 0.04, 0.4);
-            audio.volume = vol;
-            if (vol >= 0.4) clearInterval(fadeInInterval);
-          }, 100);
-        }).catch(() => {});
-      };
-
-      play();
-
-      // Fallback: play on first user interaction if autoplay is blocked
-      const onInteract = () => play();
-      document.addEventListener('click', onInteract, { once: true });
-      document.addEventListener('keydown', onInteract, { once: true });
-
-      return () => {
-        document.removeEventListener('click', onInteract);
-        document.removeEventListener('keydown', onInteract);
-      };
-    }, 800);
+    fadeInMusic('/Epic.mp3', 1500);
 
     return () => {
-      clearTimeout(startDelay);
-      clearInterval(fadeInInterval);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-        audioRef.current = null;
-      }
+      // Don't stop music here, wait for navigation to trigger fade out
     };
-  }, []);
+  }, [fadeInMusic]);
 
   // Fade out music then navigate
-  const handleNavigation = (path: string) => {
-    const audio = audioRef.current;
-    if (audio && !audio.paused) {
-      const fadeOut = setInterval(() => {
-        if (audio.volume > 0.05) {
-          audio.volume = Math.max(0, audio.volume - 0.05);
-        } else {
-          audio.volume = 0;
-          audio.pause();
-          audio.src = '';
-          audioRef.current = null;
-          clearInterval(fadeOut);
-          navigate(path);
-        }
-      }, 60);
-    } else {
-      navigate(path);
-    }
+  const handleNavigation = async (path: string) => {
+    await fadeOutMusic(1500);
+    navigate(path);
   };
 
   const handleLogout = () => {
@@ -92,59 +41,73 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="h-full flex flex-col items-center justify-center relative overflow-hidden">
-      <div className="max-w-4xl w-full flex flex-col h-full justify-center p-4 md:p-8">
+    <div className="h-full flex flex-col items-center justify-center relative overflow-hidden p-2 md:p-4">
+      <div className="max-w-4xl w-full flex flex-col h-full justify-center">
         {/* Welcome Section */}
-        <header className="text-center mb-6 md:mb-10 relative">
-          <h1 className="text-2xl md:text-4xl lg:text-5xl font-black text-white mb-2 tracking-tight text-glow">
-            Magical Spelling Quest <span className="inline-block animate-pulse">🔮</span>
+        <header className="text-center mb-4 md:mb-10 relative">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-1 tracking-tight text-glow whitespace-nowrap">
+            SpellQuest <span className="inline-block animate-pulse">🔮</span>
           </h1>
-          <p className="text-xs md:text-base text-[var(--theme-color)] font-medium max-w-lg mx-auto">
-            Greetings, {userName}! The portal is open.
+          <p className="text-xs md:text-base text-[var(--theme-color)] font-medium max-w-lg mx-auto opacity-80">
+            Greetings, {userName}! Choose your path.
           </p>
         </header>
 
         {/* Navigation Hub */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-4">
           <button
             onClick={() => handleNavigation('/spellbooks')}
-            className="glass-card p-5 md:p-8 transition-all text-left group relative overflow-hidden flex flex-col items-start justify-center min-h-[140px] md:min-h-[200px]"
+            className="glass-card p-4 md:p-8 transition-all text-left group relative overflow-hidden flex flex-col items-start justify-center min-h-[100px] md:min-h-[180px]"
           >
-            <div className="bg-[var(--theme-color)]/20 text-[var(--theme-color)] w-10 h-10 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <Book size={24} />
+            <div className="bg-[var(--theme-color)]/20 text-[var(--theme-color)] w-8 h-8 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+              <Book size={20} className="md:w-6 md:h-6" />
             </div>
-            <h3 className="text-lg md:text-2xl font-black text-white mb-1">Spellbook</h3>
-            <p className="text-[10px] md:text-sm text-[var(--theme-color)] font-medium leading-tight">Craft new incantations and record your voice.</p>
-            <div className="absolute -right-4 -bottom-4 text-white/5 group-hover:text-white/10 transition-colors">
-              <Book size={80} />
+            <h3 className="text-base md:text-2xl font-black text-white mb-0.5">Spellbook</h3>
+            <p className="text-[10px] md:text-sm text-[var(--theme-color)] font-medium leading-tight opacity-70">Craft incantations & record voice.</p>
+            <div className="absolute -right-2 -bottom-2 text-white/5 group-hover:text-white/10 transition-colors">
+              <Book size={60} className="md:w-20 md:h-20" />
             </div>
           </button>
 
           <button
-            onClick={() => handleNavigation('/portal')}
-            className="glass-card p-5 md:p-8 transition-all text-left group relative overflow-hidden border-[var(--theme-color)]/50 shadow-[0_0_30px_var(--theme-glow)] flex flex-col items-start justify-center min-h-[140px] md:min-h-[200px]"
+            onClick={() => handleNavigation('/training')}
+            className="glass-card p-4 md:p-8 transition-all text-left group relative overflow-hidden border-cyan-500/30 flex flex-col items-start justify-center min-h-[100px] md:min-h-[180px]"
           >
-            <div className="bg-[var(--theme-color)] text-white w-10 h-10 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-[0_0_15px_var(--theme-glow)]">
-              <Sparkles size={24} />
+            <div className="bg-cyan-500/10 text-cyan-400 w-8 h-8 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+              <GraduationCap size={20} className="md:w-6 md:h-6" />
             </div>
-            <h3 className="text-lg md:text-2xl font-black text-white mb-1">Magic Portal</h3>
-            <p className="text-[10px] md:text-sm text-[var(--theme-color)] font-medium leading-tight">Enter the practice realms and test your power.</p>
-            <div className="absolute -right-4 -bottom-4 text-white/5 group-hover:text-white/10 transition-colors">
-              <Sparkles size={80} />
+            <h3 className="text-base md:text-2xl font-black text-white mb-0.5">Training Ground</h3>
+            <p className="text-[10px] md:text-sm text-cyan-400 font-medium leading-tight opacity-70">Sharpen your mind with practice.</p>
+            <div className="absolute -right-2 -bottom-2 text-white/5 group-hover:text-white/10 transition-colors">
+              <GraduationCap size={60} className="md:w-20 md:h-20" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => handleNavigation('/trial')}
+            className="glass-card p-4 md:p-8 transition-all text-left group relative overflow-hidden border-rose-500/50 shadow-[0_0_30px_rgba(244,63,94,0.1)] flex flex-col items-start justify-center min-h-[100px] md:min-h-[180px]"
+          >
+            <div className="bg-gradient-to-br from-amber-500 to-rose-600 text-white w-8 h-8 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(244,63,94,0.3)]">
+              <Trophy size={20} className="md:w-6 md:h-6" />
+            </div>
+            <h3 className="text-base md:text-2xl font-black text-white mb-0.5">Begin The Trial</h3>
+            <p className="text-[10px] md:text-sm text-rose-400 font-black leading-tight">The ultimate test of power.</p>
+            <div className="absolute -right-2 -bottom-2 text-white/5 group-hover:text-white/10 transition-colors">
+              <Trophy size={60} className="md:w-20 md:h-20" />
             </div>
           </button>
 
           <button
             onClick={() => handleNavigation('/rewards')}
-            className="glass-card p-5 md:p-8 transition-all text-left group relative overflow-hidden flex flex-col items-start justify-center min-h-[140px] md:min-h-[200px]"
+            className="glass-card p-4 md:p-8 transition-all text-left group relative overflow-hidden flex flex-col items-start justify-center min-h-[100px] md:min-h-[180px]"
           >
-            <div className="bg-emerald-500/20 text-emerald-400 w-10 h-10 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <FlaskConical size={24} />
+            <div className="bg-emerald-500/20 text-emerald-400 w-8 h-8 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+              <FlaskConical size={20} className="md:w-6 md:h-6" />
             </div>
-            <h3 className="text-lg md:text-2xl font-black text-white mb-1">Potions</h3>
-            <p className="text-[10px] md:text-sm text-[var(--theme-color)] font-medium leading-tight">Brew your earned vouchers and claim rewards.</p>
-            <div className="absolute -right-4 -bottom-4 text-white/5 group-hover:text-white/10 transition-colors">
-              <FlaskConical size={80} />
+            <h3 className="text-base md:text-2xl font-black text-white mb-0.5">Potions</h3>
+            <p className="text-[10px] md:text-sm text-emerald-400 font-medium leading-tight opacity-70">Claim your earned rewards.</p>
+            <div className="absolute -right-2 -bottom-2 text-white/5 group-hover:text-white/10 transition-colors">
+              <FlaskConical size={60} className="md:w-20 md:h-20" />
             </div>
           </button>
         </div>

@@ -94,7 +94,7 @@ export default function Practice() {
     if (state?.mode) {
       setMode(state.mode);
     } else {
-      navigate('/portal');
+      navigate('/training');
     }
 
     setUserName(storageService.getUserName() || 'Hero');
@@ -105,10 +105,7 @@ export default function Practice() {
     
     const currentWord = list.words[currentIndex];
 
-    // Play custom audio incantation for Classic mode
-    if (mode === 'classic') {
-      playWordAudio(audioMapRef.current, currentWord.id);
-    }
+    // Play custom audio incantation for modes that need it (handled in components)
     
     if (mode === 'flash') {
       setFlashVisible(true);
@@ -350,7 +347,7 @@ export default function Practice() {
               className="flex items-center justify-center gap-2 bg-[var(--theme-color)] text-white p-3 rounded-xl font-bold transition-all shadow-md hover:scale-[1.02]"
             >
               <RefreshCw size={20} />
-              Re-enter Portal
+              Re-enter Training
             </button>
             <button
               onClick={() => navigate('/')}

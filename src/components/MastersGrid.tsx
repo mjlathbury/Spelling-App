@@ -41,7 +41,7 @@ export default function MastersGrid() {
         setWon(false);
       }
     } else {
-      navigate('/portal');
+      navigate('/training');
     }
 
     return () => {
@@ -167,11 +167,11 @@ export default function MastersGrid() {
                 </p>
               </div>
               <button
-                onClick={() => navigate('/portal')}
-                className="w-full py-4 bg-[var(--theme-color)] text-white font-black rounded-2xl uppercase tracking-widest shadow-[0_0_20px_var(--theme-glow)]"
-              >
-                Return to Portal
-              </button>
+                  onClick={() => navigate('/training')}
+                  className="w-full py-4 bg-[var(--theme-color)] text-white font-black rounded-2xl uppercase tracking-widest shadow-[0_0_20px_var(--theme-glow)]"
+                >
+                  Return to Training
+                </button>
             </div>
           </motion.div>
         )}

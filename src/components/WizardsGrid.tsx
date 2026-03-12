@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Sparkles, RefreshCw, Home, Loader2 } from 'lucide-react';
-import { storageService, loadWordList } from '../services/storageService';
+import { storageService, loadWordList, getCachedWordList } from '../services/storageService';
 import { useKeyboard } from '../context/KeyboardContext';
 import { SpellingList } from '../types';
 import confetti from 'canvas-confetti';
@@ -29,8 +29,8 @@ export default function WizardsGrid() {
 
   const [list, setList] = useState<SpellingList | null>(null);
   const [targetWord, setTargetWord] = useState('');
-  const [wordList, setWordList] = useState<Set<string> | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [wordList, setWordList] = useState<Set<string> | null>(() => getCachedWordList());
+  const [isLoading, setIsLoading] = useState(!getCachedWordList());
 
   const [guesses, setGuesses] = useState<GuessRow[]>([]);
   const [currentGuess, setCurrentGuess] = useState('');
@@ -51,7 +51,7 @@ export default function WizardsGrid() {
     const found = lists.find(l => l.id === listId);
 
     if (!found) {
-      navigate('/portal');
+      navigate('/training');
       return;
     }
 
@@ -66,16 +66,19 @@ export default function WizardsGrid() {
       return;
     }
 
-    loadWordList()
-      .then(set => {
-        setWordList(set);
-        setIsLoading(false);
-      })
-      .catch(() => {
-        // If wordlist fails to load, allow any word
-        setWordList(new Set());
-        setIsLoading(false);
-      });
+    if (!wordList || wordList.size === 0) {
+      loadWordList()
+        .then(set => {
+          setWordList(set);
+          setIsLoading(false);
+        })
+        .catch(() => {
+          setWordList(new Set());
+          setIsLoading(false);
+        });
+    } else {
+      setIsLoading(false);
+    }
 
     return () => { clearKeyStates(); };
   }, [listId, navigate, isTrial, clearKeyStates]);
@@ -86,72 +89,98 @@ export default function WizardsGrid() {
     toastTimer.current = setTimeout(() => setToast(null), 2000);
   }, []);
 
+  const handleWin = useCallback((attempts?: number) => {
+    const finalAttempts = attempts ?? (guesses.length + 1);
+    const starsToAward = Math.max(10, 60 - ((finalAttempts - 1) * 10));
+    confetti({ 
+      particleCount: 150, 
+      spread: 90, 
+      origin: { y: 0.5 }, 
+      colors: ['#9d50bb', '#ffd700', '#ffffff'] 
+    });
+    
+    if (isTrial) {
+      storageService.addStars(starsToAward);
+      setStarsEarned(starsToAward);
+    }
+    setWon(true);
+    setGameOver(true);
+  }, [isTrial, guesses.length]);
+
+  const handleLoss = useCallback(() => {
+    if (isTrial) storageService.lockGame(`masters-grid-${listId}`);
+    setWon(false);
+    setGameOver(true);
+  }, [isTrial, listId]);
+
   const submitGuess = useCallback(() => {
-    if (currentGuess.length !== targetWord.length || !wordList) return;
+    // 1. Basic length check (removed !wordList to allow safety net bypass)
+    if (currentGuess.length !== targetWord.length) return;
 
-    const guessLower = currentGuess.toLowerCase();
+    // 1. Aggressive cleaning to remove any potential hidden characters
+    const guessClean = currentGuess.replace(/\s+/g, '').toLowerCase();
+    const targetClean = targetWord.replace(/\s+/g, '').toLowerCase();
+    
+    // 2. Step 1: Validation
+    const isDictionaryWord = wordList?.has(guessClean) || false;
+    const isSecretWord = guessClean === targetClean;
 
-    // Wordlist validation — only skip if set is non-empty (empty = fallback)
-    if (wordList.size > 0 && !wordList.has(guessLower)) {
-      setShakingRow(guesses.length);
-      showToast('Not in the Lexicon');
-      setTimeout(() => setShakingRow(null), 600);
-      return;
-    }
+    // DEBUG LOG
+    console.log(`--- RUNE CHECK ---`);
+    console.log(`Typed: "${guessClean}" (Length: ${guessClean.length})`);
+    console.log(`In Dictionary: ${isDictionaryWord}`);
+    console.log(`Is Secret Answer: ${isSecretWord}`);
+    console.log(`Dictionary Size: ${wordList?.size || 0}`);
 
-    // Colour-code the guess
-    const states: CellState[] = Array(targetWord.length).fill('absent');
-    const targetArr = targetWord.split('');
-    const guessArr = currentGuess.split('');
+    // The Gatekeeper: If dictionary is missing or doesn't have words of this length, 
+    // trust the secret word check.
+    const isAccepted = isDictionaryWord || isSecretWord;
 
-    // First pass: mark greens
-    const remainingTarget: (string | null)[] = [...targetArr];
-    guessArr.forEach((char, i) => {
-      if (char === targetArr[i]) {
-        states[i] = 'correct';
-        remainingTarget[i] = null;
+    if (isAccepted) {
+      
+      // Step 2: Color Calculation
+      const states: CellState[] = Array(targetWord.length).fill('absent');
+      const targetArr = targetWord.toUpperCase().split('');
+      const guessArr = currentGuess.toUpperCase().split('');
+
+      const remainingTarget: (string | null)[] = [...targetArr];
+      
+      // First pass: Greens
+      guessArr.forEach((char, i) => {
+        if (char === targetArr[i]) {
+          states[i] = 'correct';
+          remainingTarget[i] = null;
+        }
+      });
+
+      // Second pass: Yellows
+      guessArr.forEach((char, i) => {
+        if (states[i] === 'correct') return;
+        const ti = remainingTarget.indexOf(char);
+        if (ti !== -1) {
+          states[i] = 'misplaced';
+          remainingTarget[ti] = null;
+        }
+      });
+
+      // Update Grid and Keyboard
+      setGuesses(prev => [...prev, { word: currentGuess.toUpperCase(), states }]);
+      guessArr.forEach((char, i) => setKeyState(char, states[i]));
+
+      if (isSecretWord) {
+        handleWin(); 
+      } else if (guesses.length + 1 >= MAX_ATTEMPTS) {
+        handleLoss(); 
+      } else {
+        setCurrentGuess('');
       }
-    });
-
-    // Second pass: mark yellows
-    guessArr.forEach((char, i) => {
-      if (states[i] === 'correct') return;
-      const ti = remainingTarget.indexOf(char);
-      if (ti !== -1) {
-        states[i] = 'misplaced';
-        remainingTarget[ti] = null;
-      }
-    });
-
-    const newGuess: GuessRow = { word: currentGuess, states };
-    const newGuesses = [...guesses, newGuess];
-    setGuesses(newGuesses);
-
-    // Update keyboard colours
-    guessArr.forEach((char, i) => {
-      const s = states[i];
-      if (s === 'correct') setKeyState(char, 'correct');
-      else if (s === 'misplaced') setKeyState(char, 'misplaced');
-      else setKeyState(char, 'disabled');
-    });
-
-    if (currentGuess === targetWord) {
-      const starsToAward = Math.max(10, 60 - (guesses.length * 10));
-      confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 }, colors: ['#9d50bb', '#ffd700', '#ffffff'] });
-      if (isTrial) {
-        storageService.addStars(starsToAward);
-        setStarsEarned(starsToAward);
-      }
-      setWon(true);
-      setGameOver(true);
-    } else if (newGuesses.length >= MAX_ATTEMPTS) {
-      if (isTrial) storageService.lockGame(`masters-grid-${listId}`);
-      setWon(false);
-      setGameOver(true);
     } else {
-      setCurrentGuess('');
+      // REJECTION
+      setShakingRow(guesses.length);
+      showToast(`${currentGuess.toUpperCase()} is not a valid rune`);
+      setTimeout(() => setShakingRow(null), 600);
     }
-  }, [currentGuess, guesses, targetWord, wordList, isTrial, listId, setKeyState, showToast]);
+  }, [currentGuess, guesses, targetWord, wordList, setKeyState, showToast, handleWin, handleLoss]);
 
   const onKeyPress = useCallback((key: string) => {
     if (gameOver || isLoading) return;
@@ -183,7 +212,9 @@ export default function WizardsGrid() {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-4">
         <Loader2 size={40} className="text-[var(--theme-color)] animate-spin" />
-        <p className="text-white/60 font-bold uppercase tracking-widest text-sm">Loading the Ancient Lexicon…</p>
+        <p className="text-white/60 font-black uppercase tracking-[0.3em] text-xs text-center px-12 animate-pulse">
+          Consulting the Great Archives...
+        </p>
       </div>
     );
   }
@@ -199,6 +230,7 @@ export default function WizardsGrid() {
     setGameOver(false);
     setWon(false);
     setStarsEarned(0);
+    // Explicitly NOT resetting wordList or isLoading to preserve Eternal Memory
   };
 
   return (
@@ -219,13 +251,16 @@ export default function WizardsGrid() {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="text-center pt-4 pb-2 shrink-0">
+      <div className="text-center pt-4 pb-2 shrink-0 relative">
         <h2 className="text-xl font-black text-white uppercase tracking-widest">
           Wizard's Grid <span className="text-[var(--theme-color)]">🔮</span>
         </h2>
         <p className="text-[var(--theme-color)] text-[10px] font-bold uppercase tracking-[0.3em] opacity-70">
           {isTrial ? 'Trial Mode' : 'Practice'} • {list.name} • {MAX_ATTEMPTS - guesses.length} attempts left
         </p>
+        <div className="absolute top-2 right-4 text-[8px] opacity-30 font-mono pointer-events-none">
+          Lexicon: {wordList?.size || 0}
+        </div>
       </div>
 
       {/* N×6 Grid — centered in stage, cells shrink for long words */}
@@ -312,11 +347,11 @@ export default function WizardsGrid() {
                   </button>
                 )}
                 <button
-                  onClick={() => navigate('/portal')}
+                  onClick={() => navigate('/training')}
                   className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl glass-button font-black uppercase tracking-widest active:scale-95 transition-all"
                 >
                   <Home size={18} />
-                  Return to Portal
+                  Return to Training
                 </button>
                 {won && (
                   <button

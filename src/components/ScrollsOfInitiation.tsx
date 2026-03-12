@@ -15,20 +15,20 @@ interface LoreInfo {
 }
 
 const GAME_LORE: Record<GameMode, LoreInfo> = {
-  'classic': {
-    name: 'Classic Spelling',
-    story: 'The Echo of Ancients. Listen closely to the Base64 Echoes caught in the spellbook as the spirits whisper the sacred scripts of old.',
-    rules: 'Listen to the audio and spell the word correctly to earn stars.'
+  'classic-test': {
+    name: 'The Grand Trial',
+    story: 'The Final Ascent. All your preparation leads to this. No whispers, no echoes, no mercy. Only your mind against the ancient runes.',
+    rules: 'The ultimate test! Use the Cast Spell button to submit. Available in 3 difficulty levels.'
   },
   'flash': {
     name: 'Flash Insight',
-    story: 'The Glimmering Insight. A brief vision of the truth is granted in a flash of arcana; hold it tight before it fades into the mist.',
-    rules: 'The word appears briefly. Memorize it and spell it from memory.'
+    story: 'The Glimmering Insight. A brief vision of the truth is granted to help you memorize the shape of power.',
+    rules: 'The word appears briefly. Memorize its form and spell it to gain knowledge.'
   },
   'blanks': {
     name: 'Fractured Runes',
-    story: 'The spell is broken, its core missing. Restore the missing symbols to mend the magic.',
-    rules: 'Fill in the missing letters to complete the word.'
+    story: 'The stones are cracked, their meanings obscured. Piece the fragments together to learn the word.',
+    rules: 'A training exercise. Fill in the missing letters to complete the word and strengthen your focus.'
   },
   'sudden-death': {
     name: "Guardian's Trial",

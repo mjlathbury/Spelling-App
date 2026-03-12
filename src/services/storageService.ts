@@ -14,8 +14,16 @@ const PRIZES_KEY = 'prize_definitions';
 const DAILY_STARS_KEY = 'daily_stars';
 const MASTERY_LOCKS_KEY = 'mastery_locks';
 const LAST_RESET_KEY = 'last_reset_dates';
+const AUDIO_MUTED_KEY = 'audio_muted';
 
 export const storageService = {
+  getMuted: (): boolean => {
+    return localStorage.getItem(AUDIO_MUTED_KEY) === 'true';
+  },
+
+  setMuted: (muted: boolean) => {
+    localStorage.setItem(AUDIO_MUTED_KEY, muted.toString());
+  },
   getUserName: (): string | null => {
     return localStorage.getItem(USER_NAME_KEY);
   },
@@ -250,6 +258,18 @@ export const storageService = {
 
   clearAll: () => {
     localStorage.clear();
+  },
+
+  // Lexicon Methods
+  getCachedWordList: () => _wordListCache,
+  loadWordList: (): Promise<Set<string>> => loadWordList(),
+  playAudio: async (wordId: string): Promise<void> => {
+    const { getAudio } = await import('./audioDb');
+    const base64 = await getAudio(wordId);
+    if (base64) {
+      const audio = new Audio(base64);
+      return audio.play();
+    }
   }
 };
 
@@ -258,18 +278,44 @@ let _wordListCache: Set<string> | null = null;
 let _wordListPromise: Promise<Set<string>> | null = null;
 
 export const loadWordList = (): Promise<Set<string>> => {
-  if (_wordListCache) return Promise.resolve(_wordListCache);
+  if (_wordListCache) {
+    console.log("Serving Lexicon from Cache. Size:", _wordListCache.size);
+    return Promise.resolve(_wordListCache);
+  }
+  console.log("FETCH INITIATED: words_alpha.txt");
   if (_wordListPromise) return _wordListPromise;
 
   _wordListPromise = fetch('/words_alpha.txt')
-    .then(res => res.text())
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP Error: ${res.status} ${res.statusText}`);
+      return res.text();
+    })
     .then(text => {
-      const set = new Set(
-        text.split(/\r?\n/).map(w => w.trim().toLowerCase()).filter(Boolean)
-      );
+      const words = text.split(/\r?\n/)
+        .map(w => w.trim().toLowerCase())
+        .filter(w => w.length >= 3 && w.length <= 8); // Now allows most spelling words!
+      
+      console.log("Lexicon loaded successfully. Count:", words.length);
+      const set = new Set(words);
+      _wordListCache = set;
+      return set;
+    })
+    .catch((err) => {
+      console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+      console.error("!!! LEXICON SUMMONING FAILED: ARCHIVES ARE UNREACHABLE   !!!");
+      console.error("!!! ERROR:", err.message);
+      console.error("!!! PATH ATTEMPTED: /words_alpha.txt                     !!!");
+      console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+      
+      // Return an empty set so the game bypass can kick in
+      const set = new Set<string>();
       _wordListCache = set;
       return set;
     });
 
   return _wordListPromise;
+};
+
+export const getCachedWordList = (): Set<string> | null => {
+  return _wordListCache;
 };

@@ -11,7 +11,7 @@ import { SpellingList, GameMode } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import ScrollsOfInitiation from './ScrollsOfInitiation';
 
-export default function MagicPortal() {
+export default function TrainingGround() {
   const navigate = useNavigate();
   const location = useLocation();
   const [lists, setLists] = useState<SpellingList[]>([]);
@@ -58,6 +58,7 @@ export default function MagicPortal() {
     setIsScrollOpen(false);
     
     const pathMap: Partial<Record<GameMode, string>> = {
+      'classic-test': `/classic-test/${selectedListId}`,
       'masters-grid': `/masters-grid/${selectedListId}`,
       'witchs-noose': `/witchs-noose/${selectedListId}`,
       'seers-wordsearch': `/seers-wordsearch/${selectedListId}`,
@@ -65,15 +66,11 @@ export default function MagicPortal() {
     };
 
     const path = pathMap[selectedMode] || `/practice/${selectedListId}`;
-    navigate(path, { state: { mode: selectedMode, isTrial } });
+    navigate(path, { state: { mode: selectedMode, isTrial: false } });
   };
 
   const modes = [
-    { id: 'classic', name: 'Classic', icon: <Type size={24} />, desc: 'Listen and type.' },
-    { id: 'flash', name: 'Flash', icon: <Eye size={24} />, desc: 'See it, then spell it!' },
-    { id: 'blanks', name: 'Blanks', icon: <Zap size={24} />, desc: 'Complete the word.' },
-    { id: 'sudden-death', name: 'Sudden Death', icon: <ShieldAlert size={24} />, desc: 'One mistake = Over!' },
-    { id: 'proofread', name: 'Proofreader', icon: <CheckCircle2 size={24} />, desc: 'Is it correct?' },
+    { id: 'flash', name: 'Flash Cards', icon: <Eye size={24} />, desc: 'Memorize the word in a flash.' },
     { id: 'masters-grid', name: "Wizard's Grid", icon: <Grid3X3 size={24} />, desc: 'Decipher the hidden rune.' },
     { id: 'witchs-noose', name: "Witch's Noose", icon: <Ghost size={24} />, desc: '13 chimes of fate.' },
     { id: 'seers-wordsearch', name: "Seer's Wordsearch", icon: <Search size={24} />, desc: 'Reveal hidden runes.' },
@@ -119,28 +116,28 @@ export default function MagicPortal() {
 
       <div className="flex-1 overflow-y-auto scrollable-content px-6 py-8">
         <div className="max-w-5xl mx-auto space-y-12">
-          <header className="text-center space-y-2">
+          <header className="text-center space-y-4">
             <h2 className="text-4xl md:text-6xl font-black text-white text-glow uppercase tracking-tighter">
-              Magic Portal 🔮
+              Training Ground 🏛️
             </h2>
-            <p className="text-sm md:text-lg text-[var(--theme-color)] font-bold tracking-widest uppercase opacity-60">
-              Choose your tome and enter the practice realms
+            <p className="text-sm md:text-lg text-cyan-400 font-black tracking-widest uppercase opacity-80">
+              Sharpen your mind in the halls of knowledge
             </p>
           </header>
 
           {/* Spellbook Selection - Large & Centered */}
           <section className="max-w-2xl mx-auto">
             <div className="glass-card p-4 border-[var(--theme-color)]/30 shadow-[0_0_40px_var(--theme-glow)] relative group">
-              <label className="block text-xs font-black text-[var(--theme-color)] uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
+              <label className="block text-xs font-black text-cyan-400 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
                 <BookOpen size={16} />
-                Active Spellbook
+                Selected Lesson
               </label>
               <div className="relative">
                 <select
                   value={selectedListId}
                   onChange={(e) => setSelectedListId(e.target.value)}
                   disabled={isEclipse}
-                  className="w-full p-3 rounded-2xl bg-black/60 border border-white/10 text-white font-black text-base outline-none focus:border-[var(--theme-color)] transition-all appearance-none cursor-pointer disabled:opacity-50 shadow-inner"
+                  className="w-full p-3 rounded-2xl bg-black/60 border border-white/10 text-white font-black text-base outline-none focus:border-cyan-400 transition-all appearance-none cursor-pointer disabled:opacity-50 shadow-inner"
                 >
                   {lists.length === 0 ? (
                     <option value="">No Spellbooks Found</option>
@@ -152,7 +149,7 @@ export default function MagicPortal() {
                     ))
                   )}
                 </select>
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--theme-color)]">
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-cyan-400">
                   <Sparkles size={24} />
                 </div>
               </div>
@@ -180,7 +177,7 @@ export default function MagicPortal() {
                     disabled={isEclipse || isLocked}
                     className={`
                       glass-card p-8 transition-all text-left group flex flex-col items-start relative overflow-hidden min-h-[220px]
-                      ${isEclipse || isLocked ? 'opacity-30 grayscale cursor-not-allowed' : 'hover:border-[var(--theme-color)] hover:shadow-[0_0_30px_var(--theme-glow)] hover:-translate-y-1'}
+                      ${isEclipse || isLocked ? 'opacity-30 grayscale cursor-not-allowed' : 'hover:border-cyan-400 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] hover:-translate-y-1'}
                     `}
                   >
                     {isLocked && (
@@ -189,13 +186,13 @@ export default function MagicPortal() {
                       </div>
                     )}
                     <div className={`
-                      bg-[var(--theme-nebula)] text-[var(--theme-color)] w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform 
-                      ${!isEclipse && !isLocked && 'group-hover:scale-110 shadow-[0_0_15px_var(--theme-glow)]'}
+                      bg-cyan-500/10 text-cyan-400 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform 
+                      ${!isEclipse && !isLocked && 'group-hover:scale-110 shadow-[0_0_15px_rgba(34,211,238,0.3)]'}
                     `}>
                       {React.cloneElement(m.icon as React.ReactElement, { size: 32 })}
                     </div>
                     <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tighter">{m.name}</h3>
-                    <p className="text-sm text-[var(--theme-color)] font-bold leading-tight opacity-70 uppercase tracking-wide">{m.desc}</p>
+                    <p className="text-sm text-cyan-400 font-bold leading-tight opacity-70 uppercase tracking-wide">{m.desc}</p>
                     
                     {/* Decorative Background Icon */}
                     <div className="absolute -right-6 -bottom-6 text-white/5 group-hover:text-white/10 transition-colors">

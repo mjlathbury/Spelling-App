@@ -15,7 +15,12 @@ interface GlobalLayoutProps {
 
 export default function GlobalLayout({ children }: GlobalLayoutProps) {
   const location = useLocation();
-  const { showKeyboard } = useKeyboard();
+  const { showKeyboard, setShowKeyboard } = useKeyboard();
+
+  // Reset keyboard state on route change to prevent ghost keyboards
+  React.useEffect(() => {
+    setShowKeyboard(false);
+  }, [location.pathname, setShowKeyboard]);
 
   const isKeyboardActive = useMemo(() => {
     const path = location.pathname;
@@ -24,10 +29,13 @@ export default function GlobalLayout({ children }: GlobalLayoutProps) {
     if (showKeyboard) return true;
 
     // Routes where the keyboard is NEVER shown — full 100vh stage
-    const noKeyboardRoutes = ['/', '/portal', '/rewards', '/spellbooks', '/settings'];
+    const noKeyboardRoutes = ['/', '/training', '/trial', '/rewards', '/spellbooks', '/settings'];
     if (noKeyboardRoutes.some(r => path === r)) return false;
     if (path.startsWith('/lexicon-leak')) return false;
     if (path.startsWith('/seers-wordsearch')) return false;
+
+    // ClassicTest has its own splash state handled by setShowKeyboard
+    if (path.startsWith('/classic-test')) return false;
 
     // All other routes (games, builder, etc.) get the keyboard
     return true;

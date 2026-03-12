@@ -99,11 +99,11 @@ export default function Spellbooks() {
                   </div>
                   
                   <button 
-                    onClick={() => navigate('/portal', { state: { selectedListId: list.id } })}
+                    onClick={() => navigate('/training', { state: { selectedListId: list.id } })}
                     className="mt-4 w-full py-2 rounded-xl bg-[var(--theme-color)] text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 hover:opacity-90 transition-colors"
                   >
                     <Play size={14} fill="currentColor" />
-                    Enter Portal
+                    Enter Training
                   </button>
                 </motion.div>
               ))}

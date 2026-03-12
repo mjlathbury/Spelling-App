@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Wand2 } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { useKeyboard } from '../context/KeyboardContext';
+import { useAudio } from '../context/AudioContext';
 
 interface SplashScreenProps {
   children: React.ReactNode;
@@ -15,7 +16,7 @@ interface SplashScreenProps {
 
 export default function SplashScreen({ children }: SplashScreenProps) {
   const [show, setShow] = useState<boolean | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { fadeInMusic, fadeOutMusic } = useAudio();
   const [name, setName] = useState('');
   const { registerHandler, unregisterHandler, setShowKeyboard } = useKeyboard();
  
@@ -28,48 +29,19 @@ export default function SplashScreen({ children }: SplashScreenProps) {
     }
   }, []);
 
-  // Helper: fade out and stop an audio element
-  const fadeOutAudio = useCallback((audio: HTMLAudioElement, onDone?: () => void) => {
-    const fadeOut = setInterval(() => {
-      if (audio.volume > 0.05) {
-        audio.volume = Math.max(0, audio.volume - 0.05);
-      } else {
-        audio.volume = 0;
-        audio.pause();
-        audio.src = '';
-        clearInterval(fadeOut);
-        onDone?.();
-      }
-    }, 80);
-  }, []);
-
   // Play magic intro audio on splash screen
   useEffect(() => {
     if (show) {
-      const audio = new Audio('/Magicintro.mp3');
-      audio.volume = 0.6;
-      audio.loop = true;
-      audioRef.current = audio;
-
-      const play = () => audio.play().catch(() => {});
-      play();
-
-      // Fallback: play on first interaction if autoplay is blocked
-      const playOnInteract = () => play();
-      document.addEventListener('keydown', playOnInteract, { once: true });
-      document.addEventListener('click', playOnInteract, { once: true });
+      fadeInMusic('/Magicintro.mp3', 1500);
 
       return () => {
-        document.removeEventListener('keydown', playOnInteract);
-        document.removeEventListener('click', playOnInteract);
-        audio.pause();
-        audio.src = '';
+        // No need to stop music here as it might transition to Dashboard
       };
     }
-  }, [show]);
+  }, [show, fadeInMusic]);
 
  
-  const handleStart = useCallback(() => {
+  const handleStart = useCallback(async () => {
     const trimmedName = name.trim();
     if (trimmedName) {
       if (navigator.vibrate) {
@@ -78,13 +50,10 @@ export default function SplashScreen({ children }: SplashScreenProps) {
       storageService.setUserName(trimmedName);
       setShowKeyboard(false);
       // Fade out splash music before transitioning
-      if (audioRef.current) {
-        fadeOutAudio(audioRef.current, () => setShow(false));
-      } else {
-        setShow(false);
-      }
+      await fadeOutMusic(1500);
+      setShow(false);
     }
-  }, [name, setShowKeyboard, fadeOutAudio]);
+  }, [name, setShowKeyboard, fadeOutMusic]);
  
   const onKeyPress = useCallback((key: string) => {
     if (key === 'ENTER') {
@@ -137,8 +106,8 @@ export default function SplashScreen({ children }: SplashScreenProps) {
             </motion.div>
 
             <div className="text-center space-y-2">
-              <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase drop-shadow-[0_0_15px_var(--theme-glow)]">
-                Magical Spelling Quest
+              <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase drop-shadow-[0_0_15px_var(--theme-glow)] whitespace-nowrap">
+                SpellQuest
               </h1>
               <p className="text-white/40 font-bold tracking-[0.4em] text-xs uppercase">
                 Enchanted Academy

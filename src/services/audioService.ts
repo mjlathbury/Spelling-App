@@ -4,11 +4,13 @@
  */
 
 import { Word } from '../types';
+import { storageService } from './storageService';
 
 /**
  * Play a Base64 audio data URL. Silent no-op if invalid or missing.
  */
 export function playBase64Audio(base64: string): void {
+  if (storageService.getMuted()) return;
   try {
     const audio = new Audio(base64);
     audio.play().catch(() => {}); // Ignore autoplay policy errors silently
@@ -37,6 +39,7 @@ export async function preloadWordAudio(words: Word[]): Promise<Map<string, HTMLA
  * No-op if the word has no audio.
  */
 export function playWordAudio(audioMap: Map<string, HTMLAudioElement>, wordId: string): void {
+  if (storageService.getMuted()) return;
   const audio = audioMap.get(wordId);
   if (audio) {
     audio.currentTime = 0;
@@ -49,6 +52,7 @@ export function playWordAudio(audioMap: Map<string, HTMLAudioElement>, wordId: s
  * (mistake 1 = highest, mistake 13 = lowest/darkest).
  */
 export function playWitchChime(mistakeNumber: number): void {
+  if (storageService.getMuted()) return;
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
 

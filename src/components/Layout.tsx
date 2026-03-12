@@ -5,7 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, LogOut, Settings as Gear, ArrowLeft } from 'lucide-react';
+import { Home, LogOut, Settings as Gear, ArrowLeft, Volume2, VolumeX } from 'lucide-react';
+import { useAudio } from '../context/AudioContext';
 import { storageService } from '../services/storageService';
 import GuardianSafe from './GuardianSafe';
 import CelestialPath from './CelestialPath';
@@ -17,6 +18,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isMuted, toggleMute } = useAudio();
   const isDashboard = location.pathname === '/';
   const isHome = location.pathname === '/'; // Keep for existing logic if needed
   const [isSafeOpen, setIsSafeOpen] = useState(false);
@@ -78,6 +80,13 @@ export default function Layout({ children }: LayoutProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          <button 
+            onClick={toggleMute}
+            className={`p-2.5 rounded-xl transition-all ${isMuted ? 'text-rose-400 bg-rose-500/10' : 'text-white/50 hover:text-white hover:bg-white/5'}`}
+            title={isMuted ? 'Unmute' : 'Mute'}
+          >
+            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+          </button>
           <button 
             onClick={handleLogout}
             className="p-2.5 text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"

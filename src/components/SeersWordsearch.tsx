@@ -15,6 +15,45 @@ interface GridCell {
   col: number;
 }
 
+type Difficulty = 'easy' | 'medium' | 'hard';
+
+const DIFFICULTY_CONFIG: Record<Difficulty, { size: number, directions: { dr: number, dc: number }[], label: string, stars: number, allowIntersection?: boolean }> = {
+  easy: { 
+    size: 10, 
+    directions: [
+      { dr: 0, dc: 1 },  // E
+      { dr: 1, dc: 0 },  // S
+      { dr: 1, dc: 1 },  // SE
+      { dr: 1, dc: -1 }, // SW
+    ],
+    label: 'Easy Vision',
+    stars: 20
+  },
+  medium: { 
+    size: 10, 
+    directions: [
+      { dr: 0, dc: 1 }, { dr: 0, dc: -1 }, // E, W
+      { dr: 1, dc: 0 }, { dr: -1, dc: 0 }, // S, N
+      { dr: 1, dc: 1 }, { dr: -1, dc: -1 }, // SE, NW
+      { dr: 1, dc: -1 }, { dr: -1, dc: 1 }, // SW, NE
+    ],
+    label: 'Medium Vision',
+    stars: 35
+  },
+  hard: { 
+    size: 12, 
+    directions: [
+      { dr: 0, dc: 1 }, { dr: 0, dc: -1 },
+      { dr: 1, dc: 0 }, { dr: -1, dc: 0 },
+      { dr: 1, dc: 1 }, { dr: -1, dc: -1 },
+      { dr: 1, dc: -1 }, { dr: -1, dc: 1 },
+    ],
+    allowIntersection: true,
+    label: 'Hard Vision',
+    stars: 50
+  }
+};
+
 export default function SeersWordsearch() {
   const { listId } = useParams();
   const navigate = useNavigate();
@@ -22,6 +61,7 @@ export default function SeersWordsearch() {
   const isTrial = location.state?.isTrial || false;
 
   const [list, setList] = useState<SpellingList | null>(null);
+  const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [grid, setGrid] = useState<GridCell[][]>([]);
   const [wordsToFind, setWordsToFind] = useState<string[]>([]);
   const [foundWords, setFoundWords] = useState<string[]>([]);
@@ -37,14 +77,20 @@ export default function SeersWordsearch() {
     const found = lists.find(l => l.id === listId);
     if (found && found.words.length > 0) {
       setList(found);
-      generateGrid(found.words.map(w => w.text.toUpperCase()));
     } else {
-      navigate('/portal');
+      navigate('/training');
     }
   }, [listId, navigate]);
 
-  const generateGrid = (words: string[]) => {
-    const size = 10;
+  const handleStartGame = (diff: Difficulty) => {
+    setDifficulty(diff);
+    if (list) {
+      generateGrid(list.words.map(w => w.text.toUpperCase()), diff);
+    }
+  };
+
+  const generateGrid = (words: string[], diff: Difficulty) => {
+    const { size, directions, allowIntersection } = DIFFICULTY_CONFIG[diff];
     const newGrid: string[][] = Array(size).fill(null).map(() => Array(size).fill(''));
     const placedWords: string[] = [];
 
@@ -54,13 +100,13 @@ export default function SeersWordsearch() {
       
       let placed = false;
       let attempts = 0;
-      while (!placed && attempts < 50) {
-        const direction = Math.floor(Math.random() * 3); // 0: Horiz, 1: Vert, 2: Diag
+      while (!placed && attempts < 100) {
+        const dir = directions[Math.floor(Math.random() * directions.length)];
         const row = Math.floor(Math.random() * size);
         const col = Math.floor(Math.random() * size);
         
-        if (canPlace(newGrid, word, row, col, direction)) {
-          placeWord(newGrid, word, row, col, direction);
+        if (canPlace(newGrid, word, row, col, dir, size, allowIntersection)) {
+          placeWord(newGrid, word, row, col, dir);
           placedWords.push(word);
           placed = true;
         }
@@ -82,25 +128,27 @@ export default function SeersWordsearch() {
     setWordsToFind(placedWords);
   };
 
-  const canPlace = (grid: string[][], word: string, row: number, col: number, dir: number) => {
-    const size = 10;
+  const canPlace = (grid: string[][], word: string, row: number, col: number, dir: { dr: number, dc: number }, size: number, allowIntersection?: boolean) => {
     for (let i = 0; i < word.length; i++) {
-      let r = row, c = col;
-      if (dir === 0) c += i;
-      if (dir === 1) r += i;
-      if (dir === 2) { r += i; c += i; }
+      const r = row + (i * dir.dr);
+      const c = col + (i * dir.dc);
       
-      if (r >= size || c >= size || (grid[r][c] !== '' && grid[r][c] !== word[i])) return false;
+      if (r < 0 || r >= size || c < 0 || c >= size) return false;
+      
+      const currentCell = grid[r][c];
+      if (currentCell !== '') {
+        if (!allowIntersection || currentCell !== word[i]) {
+          return false;
+        }
+      }
     }
     return true;
   };
 
-  const placeWord = (grid: string[][], word: string, row: number, col: number, dir: number) => {
+  const placeWord = (grid: string[][], word: string, row: number, col: number, dir: { dr: number, dc: number }) => {
     for (let i = 0; i < word.length; i++) {
-      let r = row, c = col;
-      if (dir === 0) c += i;
-      if (dir === 1) r += i;
-      if (dir === 2) { r += i; c += i; }
+      const r = row + (i * dir.dr);
+      const c = col + (i * dir.dc);
       grid[r][c] = word[i];
     }
   };
@@ -141,8 +189,10 @@ export default function SeersWordsearch() {
       if (newFound.length === wordsToFind.length) {
         setGameOver(true);
         if (isTrial) {
-          storageService.addStars(50);
-          setStarsEarned(50);
+          const { stars } = DIFFICULTY_CONFIG[difficulty!];
+          const totalStars = stars * wordsToFind.length;
+          storageService.addStars(totalStars);
+          setStarsEarned(totalStars);
         }
       }
     }
@@ -192,12 +242,68 @@ export default function SeersWordsearch() {
 
   if (!list) return null;
 
+  if (!difficulty) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-6 bg-black/40 backdrop-blur-xl">
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="w-full max-w-lg space-y-12"
+        >
+          <div className="text-center space-y-4">
+            <h2 className="text-5xl font-black text-white uppercase tracking-tighter text-glow">The Seer's Vision</h2>
+            <p className="text-[var(--theme-color)] font-bold text-lg uppercase tracking-widest opacity-80">Choose your vision orb</p>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-6">
+            {(Object.keys(DIFFICULTY_CONFIG) as Difficulty[]).map((diff, i) => (
+              <motion.button
+                key={diff}
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ scale: 1.05, y: -5 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleStartGame(diff)}
+                className="group relative flex items-center justify-between p-8 rounded-[2.5rem] bg-white/5 border-2 border-white/10 hover:border-[var(--theme-color)] hover:bg-[var(--theme-color)]/20 shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-[var(--theme-color)]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="text-left relative z-10">
+                  <span className="block text-2xl font-black text-white uppercase tracking-tight">{DIFFICULTY_CONFIG[diff].label}</span>
+                  <p className="text-sm font-bold text-white/50 uppercase tracking-[0.2em] mt-1 max-w-[200px]">
+                    {diff === 'easy' && 'Horizontal, vertical & diagonal forward only'}
+                    {diff === 'medium' && 'Inverted vision: Words can be backwards'}
+                    {diff === 'hard' && 'Intersecting runes & all 8 directions'}
+                  </p>
+                </div>
+                <div className="p-4 rounded-full bg-white/5 border border-white/10 text-white/20 group-hover:text-[var(--theme-color)] group-hover:border-[var(--theme-color)] group-hover:shadow-[0_0_20px_var(--theme-glow)] transition-all">
+                  <div className="text-3xl">👁️</div>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => navigate('/training')}
+            className="w-full text-white/30 text-sm font-black hover:text-white uppercase tracking-[0.3em] transition-colors text-center"
+          >
+            ← Return to Training
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  const { size, stars } = DIFFICULTY_CONFIG[difficulty];
+
   return (
     <div className="h-full flex flex-col relative overflow-hidden select-none">
       <div className="text-center mb-4">
-        <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-1">The Seer's Wordsearch</h2>
+        <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-1">
+          {DIFFICULTY_CONFIG[difficulty].label}
+        </h2>
         <p className="text-[var(--theme-color)] text-xs font-bold uppercase tracking-widest opacity-70">
-          {isTrial ? 'Trial Mode' : 'Practice Mode'} • {foundWords.length}/{wordsToFind.length} Found
+          {isTrial ? 'Trial Mode' : 'Training Mode'} • {foundWords.length}/{wordsToFind.length} Found
         </p>
       </div>
 
@@ -211,14 +317,20 @@ export default function SeersWordsearch() {
           onTouchStart={handleStart}
           onTouchMove={handleMove}
           onTouchEnd={handleEnd}
-          className="grid grid-cols-10 gap-1 p-2 glass-card border-[var(--theme-color)]/30 touch-none"
+          className="glass-card border-[var(--theme-color)]/30 touch-none p-2"
+          style={{ 
+            display: 'grid', 
+            gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))`,
+            gap: size > 10 ? '2px' : '4px'
+          }}
         >
             {grid.map((row, r) => row.map((cell, c) => (
             <div
               key={`${r}-${c}`}
               data-cell={`${r}-${c}`}
               className={`
-                w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-sm font-black transition-all rounded-md
+                flex items-center justify-center font-black transition-all rounded-md
+                ${size > 10 ? 'w-6 h-6 sm:w-7 sm:h-7 text-[10px]' : 'w-7 h-7 sm:w-8 sm:h-8 text-sm'}
                 ${isCellSelected(r, c) ? 'bg-[#9d50bb]/80 text-white scale-110 z-10 shadow-[0_0_15px_#9d50bb]' : ''}
                 ${isCellFound(r, c) ? 'text-gold drop-shadow-[0_0_8px_rgba(255,215,0,0.8)]' : 'text-white/60'}
               `}
@@ -264,10 +376,10 @@ export default function SeersWordsearch() {
                 </p>
               </div>
               <button
-                onClick={() => navigate('/portal')}
+                onClick={() => navigate('/training')}
                 className="w-full py-4 bg-[var(--theme-color)] text-white font-black rounded-2xl uppercase tracking-widest shadow-[0_0_20px_var(--theme-glow)]"
               >
-                Return to Portal
+                Return to Training
               </button>
             </div>
           </motion.div>
